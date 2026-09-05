@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <title>AI RAG Assistant</title>
+
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body class="bg-[#212121] text-white h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-[#171717] flex flex-col border-r border-zinc-800 transition-all duration-300">
+        <!-- New Chat Button -->
+        <div class="p-3">
+            <button 
+                onclick="newChat()"
+                class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-zinc-700 hover:bg-zinc-800 transition-colors text-sm"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                New chat
+            </button>
+        </div>
+
+        <!-- Model Selection -->
+        <div class="px-3 pb-3">
+            <div class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider px-3 mb-2">AI Model</div>
+            <select id="modelSelect" class="w-full bg-[#171717] border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-emerald-600 cursor-pointer">
+                <option value="tinyllama">TinyLlama (Local)</option>
+                <option value="openai" disabled>OpenAI GPT-4 (Coming Soon)</option>
+            </select>
+        </div>
+
+        <!-- Conversation History -->
+        <div class="flex-1 overflow-y-auto px-3">
+            <div class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider px-3 mb-2 mt-4">History</div>
+            <div id="conversationHistory" class="space-y-1 mb-6">
+                <!-- Conversations will be added here -->
+            </div>
+
+            <div class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider px-3 mb-2">Knowledge Base</div>
+            <div id="documentList" class="space-y-1 text-xs text-zinc-400 px-3 pb-4">
+                <p class="italic opacity-50">No documents uploaded</p>
+            </div>
+        </div>
+
+        <!-- PDF Upload Section in Sidebar -->
+        <div class="p-3 border-t border-zinc-800">
+            <button 
+                id="uploadBtnSidebar"
+                onclick="toggleUploadModal()"
+                class="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-zinc-800 transition-colors text-sm text-zinc-400"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Upload PDFs
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative">
+        <!-- Header -->
+        <header class="h-12 flex items-center justify-between px-4 border-b border-zinc-800">
+            <button 
+                onclick="toggleSidebar()"
+                class="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium">AI RAG Assistant</span>
+            </div>
+            <div class="flex gap-2">
+                <button 
+                    onclick="exportChat()"
+                    class="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                    title="Export conversation"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Area -->
+        <div id="chat" class="flex-1 overflow-y-auto" role="log" aria-live="polite" aria-label="Chat conversation">
+            <div id="chatPlaceholder" class="h-full flex flex-col items-center justify-center text-zinc-500">
+                <div class="text-3xl mb-4">📚</div>
+                <p class="text-lg font-medium mb-2">How can I help you today?</p>
+                <p class="text-sm">Upload PDFs to get started</p>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 border-t border-zinc-800">
+            <div class="max-w-3xl mx-auto">
+                <div class="relative flex items-end gap-2 bg-zinc-800 rounded-2xl p-2">
+                    <button
+                        id="uploadBtnInput"
+                        onclick="toggleUploadModal()"
+                        class="p-2 text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-zinc-700"
+                        title="Upload PDFs"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                    <textarea
+                        id="question"
+                        placeholder="Message AI RAG Assistant..."
+                        rows="1"
+                        class="flex-1 bg-transparent text-white placeholder-zinc-500 resize-none focus:outline-none px-3 py-2 max-h-48"
+                        onkeydown="handleKeyDown(event)"
+                    ></textarea>
+                    <button
+                        onclick="askQuestion()"
+                        class="p-2 bg-white text-black rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        id="sendButton"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                    </button>
+                </div>
+                <p class="text-xs text-zinc-500 text-center mt-2">
+                    AI RAG Assistant can make mistakes. Verify important information.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-[#2d2d2d] rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Upload PDFs</h3>
+                <button onclick="toggleUploadModal()" class="p-1 hover:bg-zinc-700 rounded-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div 
+                id="dropZone"
+                class="group relative border-2 border-dashed border-zinc-700 rounded-2xl p-12 text-center transition-all duration-300 hover:border-indigo-500 hover:bg-indigo-500/5 cursor-pointer"
+                onclick="document.getElementById('pdfFiles').click()"
+            >
+                <input
+                    type="file"
+                    id="pdfFiles"
+                    accept=".pdf"
+                    multiple
+                    class="hidden"
+                >
+                <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center mb-4 group-hover:bg-indigo-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-zinc-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                    </div>
+                    <h4 class="text-white font-medium mb-1">Click or drag PDF to upload</h4>
+                    <p class="text-zinc-500 text-sm">Max size 25MB per file</p>
+                </div>
+            </div>
+
+            <div id="uploadProgress" class="hidden mt-6 bg-zinc-800/50 p-4 rounded-xl border border-zinc-700/50">
+                <div class="flex justify-between text-xs font-bold text-indigo-400 mb-2 uppercase tracking-tight">
+                    <span id="uploadStepText">Uploading...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="w-full bg-zinc-700 rounded-full h-1.5 overflow-hidden mb-3">
+                    <div id="progressBar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <button
+                    onclick="cancelUpload()"
+                    class="w-full py-1.5 text-[10px] font-bold text-zinc-500 hover:text-red-400 border border-zinc-700 rounded hover:border-red-400/50 transition-all uppercase tracking-widest"
+                >
+                    Stop Upload
+                </button>
+            </div>
+
+            <div id="filePreviewArea" class="mt-4 hidden">
+                <div class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-2">Selected Files</div>
+                <div id="selectedFilesList" class="space-y-2"></div>
+            </div>
+
+            <p id="uploadStatus" class="mt-4 text-sm"></p>
+
+            <button 
+                onclick="uploadPDFs()"
+                class="hidden w-full mt-4 px-4 py-3 bg-white text-black rounded-xl font-semibold hover:bg-zinc-200 transition-colors"
+                id="uploadButton"
+            >
+                Start Upload
+            </button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

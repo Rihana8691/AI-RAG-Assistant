@@ -1,0 +1,22 @@
+[
+    {
+        "instruction": "What is a database?",
+        "response": "A database is an organized collection of data that can be stored, managed, and retrieved efficiently."
+    },
+    {
+        "instruction": "What is artificial intelligence?",
+        "response": "Artificial intelligence is a field of computer science that develops systems capable of performing tasks that normally require human intelligence."
+    },
+    {
+        "instruction": "What is machine learning?",
+        "response": "Machine learning is a branch of artificial intelligence where computers learn patterns from data and use those patterns to make predictions or decisions."
+    },
+    {
+        "instruction": "What is a programming language?",
+        "response": "A programming language is a formal language used to write instructions that a computer can execute."
+    },
+    {
+        "instruction": "What is a neural network?",
+        "response": "A neural network is a machine learning model inspired by the structure of the human brain. It consists of connected computational units called neurons."
+    }
+]
