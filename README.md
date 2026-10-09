@@ -73,4 +73,4 @@ Open `frontend/index.html` in your web browser.
 - Localized AI execution (TinyLlama) for data privacy.
 
 ---
-Built as part of an AI Sector Project.
+
